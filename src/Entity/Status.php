@@ -2,34 +2,52 @@
 
 namespace App\Entity;
 
+use App\Entity\Trait\IdNameTrait;
 use App\Repository\StatusRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: StatusRepository::class)]
 class Status
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+   use IdNameTrait;
 
-    #[ORM\Column(length: 255)]
-    private ?string $name = null;
+   #[ORM\OneToMany(mappedBy: 'status', targetEntity: UserBook::class)]
+   private Collection $userBooks;
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+   public function __construct()
+   {
+       $this->userBooks = new ArrayCollection();
+   }
 
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
+   /**
+    * @return Collection<int, UserBook>
+    */
+   public function getUserBooks(): Collection
+   {
+       return $this->userBooks;
+   }
 
-    public function setName(string $name): static
-    {
-        $this->name = $name;
+   public function addUserBook(UserBook $userBook): static
+   {
+       if (!$this->userBooks->contains($userBook)) {
+           $this->userBooks->add($userBook);
+           $userBook->setStatus($this);
+       }
 
-        return $this;
-    }
+       return $this;
+   }
+
+   public function removeUserBook(UserBook $userBook): static
+   {
+       if ($this->userBooks->removeElement($userBook)) {
+           // set the owning side to null (unless already changed)
+           if ($userBook->getStatus() === $this) {
+               $userBook->setStatus(null);
+           }
+       }
+
+       return $this;
+   }
 }
